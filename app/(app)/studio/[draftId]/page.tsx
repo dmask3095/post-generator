@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/auth-provider';
-import { getSupabaseBrowserClient } from '@/lib/supabase';
+import { getSupabaseBrowserClient } from '@/lib/supabase-browser';
 import { MOCK_DRAFTS } from '@/lib/mock-data';
 import type { ContentDraft, DraftVersion, TransformInstruction } from '@/lib/database.types';
 import { ScoreBand, PlatformBadge, StatusBadge } from '@/components/score-badges';
@@ -85,13 +85,20 @@ export default function DraftEditorPage() {
   const loadDraft = async () => {
     if (!user || !id) return;
     setLoading(true);
-    const [draftRes, versionsRes] = await Promise.all([
-      supabase.from('content_drafts').select('*').eq('id', id).eq('user_id', user.id).maybeSingle(),
-      supabase.from('draft_versions').select('*').eq('draft_id', id).order('version_number', { ascending: false }),
-    ]);
-    if (draftRes.data) { setDraft(draftRes.data); setBody(draftRes.data.body); }
-    setVersions(versionsRes.data ?? []);
-    setLoading(false);
+    try {
+      const [draftRes, versionsRes] = await Promise.all([
+        supabase.from('content_drafts').select('*').eq('id', id).eq('user_id', user.id).maybeSingle(),
+        supabase.from('draft_versions').select('*').eq('draft_id', id).order('version_number', { ascending: false }),
+      ]);
+      if (draftRes.error) throw draftRes.error;
+      if (draftRes.data) { setDraft(draftRes.data); setBody(draftRes.data.body); }
+      setVersions(versionsRes.data ?? []);
+    } catch (err: any) {
+      console.error('loadDraft failed:', err);
+      toast.error(err.message || 'Failed to load draft');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const saveBody = async () => {

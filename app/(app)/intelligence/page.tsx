@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/components/providers/auth-provider';
-import { getSupabaseBrowserClient } from '@/lib/supabase';
+import { getSupabaseBrowserClient } from '@/lib/supabase-browser';
 import { MOCK_OPPORTUNITIES, MOCK_TREND_CLUSTERS } from '@/lib/mock-data';
 import type { ContentOpportunity, TrendCluster } from '@/lib/database.types';
 import { ScoreBand, ScoreBadge } from '@/components/score-badges';

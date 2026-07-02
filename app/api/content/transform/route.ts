@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseServerClient } from '@/lib/supabase';
+import { getSupabaseServerClient } from '@/lib/supabase-server';
 import type { TransformInstruction } from '@/lib/database.types';
 
 const INSTRUCTION_PROMPTS: Record<TransformInstruction, string> = {
@@ -18,7 +18,7 @@ const INSTRUCTION_PROMPTS: Record<TransformInstruction, string> = {
 };
 
 export async function POST(req: NextRequest) {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ ok: false, error: { code: 'UNAUTHORIZED' } }, { status: 401 });
 

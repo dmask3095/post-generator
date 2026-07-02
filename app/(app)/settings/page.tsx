@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/components/providers/auth-provider';
-import { getSupabaseBrowserClient } from '@/lib/supabase';
+import { getSupabaseBrowserClient } from '@/lib/supabase-browser';
 import type { BrandProfile, AppSettings, EmailPreferences, SocialAccount } from '@/lib/database.types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -75,7 +75,13 @@ export default function SettingsPage() {
   const saveEmailPrefs = async () => {
     if (!user || !emailPrefs) return;
     setSaving(true);
-    await supabase.from('email_preferences').upsert({ ...emailPrefs, user_id: user.id }, { onConflict: 'user_id' });
+    await supabase.from('email_preferences').upsert({
+      user_id: user.id,
+      daily_draft_email_enabled: emailPrefs.daily_draft_email_enabled,
+      daily_email_time: emailPrefs.daily_email_time,
+      weekly_report_enabled: emailPrefs.weekly_report_enabled,
+      weekly_report_day: emailPrefs.weekly_report_day,
+    }, { onConflict: 'user_id' });
     toast.success('Email preferences saved');
     setSaving(false);
   };

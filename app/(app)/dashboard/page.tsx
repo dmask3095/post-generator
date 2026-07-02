@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/components/providers/auth-provider';
-import { getSupabaseBrowserClient } from '@/lib/supabase';
+import { getSupabaseBrowserClient } from '@/lib/supabase-browser';
 import { MOCK_OPPORTUNITIES, MOCK_DRAFTS, WEEKLY_LEARNING_REPORT } from '@/lib/mock-data';
 import type { ContentOpportunity, ContentDraft, Profile } from '@/lib/database.types';
 import { ScoreBand, PlatformBadge, StatusBadge } from '@/components/score-badges';

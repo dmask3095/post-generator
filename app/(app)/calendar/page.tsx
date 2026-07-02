@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/components/providers/auth-provider';
-import { getSupabaseBrowserClient } from '@/lib/supabase';
+import { getSupabaseBrowserClient } from '@/lib/supabase-browser';
 import { MOCK_DRAFTS } from '@/lib/mock-data';
 import type { ContentDraft } from '@/lib/database.types';
 import { PlatformBadge, StatusBadge } from '@/components/score-badges';
