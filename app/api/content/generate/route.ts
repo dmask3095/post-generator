@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/lib/supabase-server';
+import { generateJSON } from '@/lib/gemini';
 import { MOCK_DRAFTS } from '@/lib/mock-data';
 import type { ContentOpportunity, Database } from '@/lib/database.types';
 
@@ -24,10 +25,7 @@ function containsBannedPhrase(text: string): boolean {
   return BANNED_PHRASES.some(p => lower.includes(p));
 }
 
-async function generateWithOpenAI(opportunity: ContentOpportunity, platform: string, postType: string, brandContext: string): Promise<typeof MOCK_DRAFTS[0] | null> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return null;
-
+async function generateWithGemini(opportunity: ContentOpportunity, platform: string, postType: string, brandContext: string): Promise<typeof MOCK_DRAFTS[0] | null> {
   const systemPrompt = `You are writing for Sejal Kishor Daterao — a product thinker, tech-business analyst, and student founder.
 ${brandContext}
 
@@ -58,26 +56,10 @@ ${platform === 'linkedin'
 
 Return JSON only.`;
 
-  try {
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model: process.env.OPENAI_GENERATION_MODEL || 'gpt-4o-mini',
-        messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }],
-        response_format: { type: 'json_object' },
-        temperature: 0.8,
-        max_tokens: 1000,
-      }),
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    const parsed = JSON.parse(data.choices[0].message.content);
-    if (containsBannedPhrase(parsed.body)) return null;
-    return { platform: platform as 'linkedin' | 'x', post_type: postType, title: null as string | null, hook: parsed.hook, body: parsed.body, hashtags: parsed.hashtags ?? [], emojis: [], rationale: parsed.rationale, status: 'draft' as const, brand_fit_score: parsed.scores?.brand_fit ?? 80, originality_score: parsed.scores?.originality ?? 80, virality_score: parsed.scores?.virality ?? 75, clarity_score: parsed.scores?.clarity ?? 85, cliche_risk_score: parsed.scores?.cliche_risk ?? 10, overall_score: parsed.scores?.overall ?? 80 };
-  } catch {
-    return null;
-  }
+  const parsed = await generateJSON<{ hook: string; body: string; hashtags?: string[]; rationale: string; scores?: Record<string, number> }>(systemPrompt, userPrompt, { temperature: 0.8 });
+  if (!parsed) return null;
+  if (containsBannedPhrase(parsed.body)) return null;
+  return { platform: platform as 'linkedin' | 'x', post_type: postType, title: null as string | null, hook: parsed.hook, body: parsed.body, hashtags: parsed.hashtags ?? [], emojis: [], rationale: parsed.rationale, status: 'draft' as const, brand_fit_score: parsed.scores?.brand_fit ?? 80, originality_score: parsed.scores?.originality ?? 80, virality_score: parsed.scores?.virality ?? 75, clarity_score: parsed.scores?.clarity ?? 85, cliche_risk_score: parsed.scores?.cliche_risk ?? 10, overall_score: parsed.scores?.overall ?? 80 };
 }
 
 export async function POST(req: NextRequest) {
@@ -112,7 +94,7 @@ export async function POST(req: NextRequest) {
 
     for (let i = 0; i < count; i++) {
       const postType = types[i % types.length];
-      let draft = opportunity ? await generateWithOpenAI(opportunity as ContentOpportunity, platform, postType, brandContext) : null;
+      let draft = opportunity ? await generateWithGemini(opportunity as ContentOpportunity, platform, postType, brandContext) : null;
 
       if (!draft) {
         const mockIdx = (platform === 'linkedin' ? 0 : 1) + i * 2;

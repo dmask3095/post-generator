@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/lib/supabase-server';
+import { generateJSON } from '@/lib/gemini';
 import type { TransformInstruction } from '@/lib/database.types';
 
 const INSTRUCTION_PROMPTS: Record<TransformInstruction, string> = {
@@ -49,18 +50,7 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
-
-  if (!apiKey) {
-    const transformedBody = simulateTransform(existingBody, instruction);
-    if (draftId) {
-      await supabase.from('content_drafts').update({ body: transformedBody }).eq('id', draftId);
-    }
-    return NextResponse.json({ ok: true, body: transformedBody, scores: { brand_fit: 88, originality: 85, virality: 80, clarity: 90, cliche_risk: 8, overall: 87 } });
-  }
-
-  try {
-    const systemPrompt = `You are an editor for Sejal Kishor Daterao's personal brand content. She writes about technology, business, AI, startups, and product thinking. Her voice is concise, sharp, witty, non-cliched, and authentic.
+  const systemPrompt = `You are an editor for Sejal Kishor Daterao's personal brand content. She writes about technology, business, AI, startups, and product thinking. Her voice is concise, sharp, witty, non-cliched, and authentic.
 
 QUALITY RULES:
 - LinkedIn: max 160 words. Punchy, every sentence earns its place.
@@ -70,45 +60,36 @@ QUALITY RULES:
 
 Return ONLY valid JSON with fields: body (the revised post), change_summary (brief), scores (object: brand_fit, originality, virality, clarity, cliche_risk, overall as 0-100).`;
 
-    const userPrompt = `${INSTRUCTION_PROMPTS[instruction]}
+  const userPrompt = `${INSTRUCTION_PROMPTS[instruction]}
 
 Current post:
 ${existingBody}
 
 Return JSON only.`;
 
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model: process.env.OPENAI_GENERATION_MODEL || 'gpt-4o-mini',
-        messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }],
-        response_format: { type: 'json_object' },
-        temperature: 0.7,
-        max_tokens: 800,
-      }),
-    });
+  const parsed = await generateJSON<{ body: string; scores?: Record<string, number> }>(systemPrompt, userPrompt);
 
-    const data = await res.json();
-    const parsed = JSON.parse(data.choices[0].message.content);
-
-    if (draftId) {
-      await supabase.from('content_drafts').update({
-        body: parsed.body,
-        brand_fit_score: parsed.scores?.brand_fit,
-        originality_score: parsed.scores?.originality,
-        virality_score: parsed.scores?.virality,
-        clarity_score: parsed.scores?.clarity,
-        cliche_risk_score: parsed.scores?.cliche_risk,
-        overall_score: parsed.scores?.overall,
-      }).eq('id', draftId);
-    }
-
-    return NextResponse.json({ ok: true, body: parsed.body, scores: parsed.scores });
-  } catch (err: any) {
+  if (!parsed) {
     const fallback = simulateTransform(existingBody, instruction);
+    if (draftId) {
+      await supabase.from('content_drafts').update({ body: fallback }).eq('id', draftId);
+    }
     return NextResponse.json({ ok: true, body: fallback, scores: { brand_fit: 85, originality: 82, virality: 78, clarity: 88, cliche_risk: 10, overall: 85 } });
   }
+
+  if (draftId) {
+    await supabase.from('content_drafts').update({
+      body: parsed.body,
+      brand_fit_score: parsed.scores?.brand_fit,
+      originality_score: parsed.scores?.originality,
+      virality_score: parsed.scores?.virality,
+      clarity_score: parsed.scores?.clarity,
+      cliche_risk_score: parsed.scores?.cliche_risk,
+      overall_score: parsed.scores?.overall,
+    }).eq('id', draftId);
+  }
+
+  return NextResponse.json({ ok: true, body: parsed.body, scores: parsed.scores });
 }
 
 function simulateTransform(body: string, instruction: TransformInstruction): string {

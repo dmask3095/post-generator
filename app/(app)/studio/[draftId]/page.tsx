@@ -359,7 +359,7 @@ export default function DraftEditorPage() {
                       <div className="text-center p-8">
                         <ImageIcon className="w-10 h-10 mx-auto mb-3 text-muted-foreground/30" />
                         <p className="text-sm font-medium text-muted-foreground">Visual concept ready</p>
-                        <p className="text-xs text-muted-foreground/70 mt-1">Add an OpenAI API key to generate images</p>
+                        <p className="text-xs text-muted-foreground/70 mt-1">Use the prompt below to generate this image with your preferred tool</p>
                       </div>
                     </div>
                   )}
@@ -386,7 +386,7 @@ export default function DraftEditorPage() {
                 {/* Image prompt (for custom generation) */}
                 <div className="bg-card border border-border rounded-lg p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">DALL-E Prompt</span>
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Image Prompt</span>
                     <button
                       onClick={() => { navigator.clipboard.writeText(visual.imagePrompt); toast.success('Prompt copied'); }}
                       className="text-xs text-primary hover:underline"

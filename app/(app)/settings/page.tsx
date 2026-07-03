@@ -284,7 +284,7 @@ export default function SettingsPage() {
                   <h2 className="font-semibold">API Keys Status</h2>
                   <p className="text-sm text-muted-foreground">Configure environment variables to enable external features.</p>
                   {[
-                    { key: 'OPENAI_API_KEY', label: 'OpenAI', desc: 'Required for AI content generation' },
+                    { key: 'GEMINI_API_KEY', label: 'Gemini', desc: 'Required for AI content generation' },
                     { key: 'RESEND_API_KEY', label: 'Resend', desc: 'Required for daily draft emails' },
                     { key: 'LINKEDIN_CLIENT_ID', label: 'LinkedIn OAuth', desc: 'Required for auto-publishing to LinkedIn' },
                     { key: 'X_CLIENT_ID', label: 'X OAuth', desc: 'Required for auto-publishing to X' },

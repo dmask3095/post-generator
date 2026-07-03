@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/lib/supabase-server';
+import { generateJSON } from '@/lib/gemini';
 import { WEEKLY_LEARNING_REPORT } from '@/lib/mock-data';
 
 export async function POST(req: NextRequest) {
@@ -17,30 +18,13 @@ export async function POST(req: NextRequest) {
 
   let reportData = WEEKLY_LEARNING_REPORT;
 
-  if (metrics.length > 0 && process.env.OPENAI_API_KEY) {
-    try {
-      const res = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` },
-        body: JSON.stringify({
-          model: process.env.OPENAI_GENERATION_MODEL || 'gpt-4o-mini',
-          messages: [{
-            role: 'system',
-            content: 'Analyze content performance and return JSON with: summary, what_worked (array), what_failed (array), recommendations (array), learned_patterns (object).',
-          }, {
-            role: 'user',
-            content: `Analyze these metrics for Sejal's content: ${JSON.stringify(metrics.slice(0, 10))}`,
-          }],
-          response_format: { type: 'json_object' },
-          temperature: 0.5,
-          max_tokens: 600,
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        reportData = JSON.parse(data.choices[0].message.content);
-      }
-    } catch {}
+  if (metrics.length > 0) {
+    const parsed = await generateJSON(
+      'Analyze content performance and return JSON with: summary, what_worked (array), what_failed (array), recommendations (array), learned_patterns (object).',
+      `Analyze these metrics for Sejal's content: ${JSON.stringify(metrics.slice(0, 10))}`,
+      { temperature: 0.5 }
+    );
+    if (parsed) reportData = parsed;
   }
 
   const now = new Date();

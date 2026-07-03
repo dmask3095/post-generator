@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/lib/supabase-server';
+import { generateJSON } from '@/lib/gemini';
 
 interface VisualConcept {
   imageUrl: string | null;
@@ -53,83 +54,37 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: { code: 'BAD_REQUEST', message: 'postBody and platform are required' } }, { status: 400 });
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
-
-  if (!apiKey) {
-    return NextResponse.json({ ok: true, ...MOCK_VISUAL_CONCEPTS[platform] });
-  }
-
-  try {
-    // Step 1: Generate visual concept + DALL-E prompt via GPT
-    const conceptRes = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model: process.env.OPENAI_GENERATION_MODEL || 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: `You are a visual director for a professional personal brand on ${platform === 'linkedin' ? 'LinkedIn' : 'X (Twitter)'}.
+  const systemPrompt = `You are a visual director for a professional personal brand on ${platform === 'linkedin' ? 'LinkedIn' : 'X (Twitter)'}.
 You create visual content strategies that maximize engagement.
 Return ONLY valid JSON with:
-- imagePrompt: A detailed DALL-E 3 prompt for a ${platform === 'linkedin' ? '16:9 landscape' : '1:1 square'} image. No text in image. Professional, visually striking, dark or neutral background preferred.
+- imagePrompt: A detailed image-generation prompt for a ${platform === 'linkedin' ? '16:9 landscape' : '1:1 square'} image. No text in image. Professional, visually striking, dark or neutral background preferred.
 - concept: 1-sentence description of what the visual shows and why it works for this post.
 - style: The visual aesthetic in 5-8 words (e.g. "minimalist dark tech, electric blue accents").
 - alternativeIdeas: Array of 2-3 objects each with "description" and "style" for other visual options.
-- captionSuggestion: 1-sentence note on how to use this visual with the post for max engagement.`,
-          },
-          {
-            role: 'user',
-            content: `Post for ${platform === 'linkedin' ? 'LinkedIn' : 'X'}:
+- captionSuggestion: 1-sentence note on how to use this visual with the post for max engagement.`;
+
+  const userPrompt = `Post for ${platform === 'linkedin' ? 'LinkedIn' : 'X'}:
 Hook: ${hook || ''}
 Body: ${postBody.slice(0, 400)}
 
-Generate a visual concept and DALL-E prompt that will stop the scroll and amplify this message.`,
-          },
-        ],
-        response_format: { type: 'json_object' },
-        temperature: 0.7,
-        max_tokens: 600,
-      }),
-    });
+Generate a visual concept and image-generation prompt that will stop the scroll and amplify this message.`;
 
-    const conceptData = await conceptRes.json();
-    const concept = JSON.parse(conceptData.choices[0].message.content);
+  const concept = await generateJSON<{ imagePrompt: string; concept: string; style: string; alternativeIdeas?: { description: string; style: string }[]; captionSuggestion: string }>(systemPrompt, userPrompt);
 
-    // Step 2: Generate actual image with DALL-E 3
-    let imageUrl: string | null = null;
-    try {
-      const imageRes = await fetch('https://api.openai.com/v1/images/generations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-        body: JSON.stringify({
-          model: 'dall-e-3',
-          prompt: concept.imagePrompt,
-          n: 1,
-          size: platform === 'linkedin' ? '1792x1024' : '1024x1024',
-          quality: 'standard',
-          style: 'vivid',
-        }),
-      });
-
-      if (imageRes.ok) {
-        const imageData = await imageRes.json();
-        imageUrl = imageData.data?.[0]?.url ?? null;
-      }
-    } catch {
-      // Image generation failed, return concept without image
-    }
-
-    return NextResponse.json({
-      ok: true,
-      imageUrl,
-      imagePrompt: concept.imagePrompt,
-      concept: concept.concept,
-      style: concept.style,
-      alternativeIdeas: concept.alternativeIdeas ?? [],
-      captionSuggestion: concept.captionSuggestion,
-    });
-  } catch (err: any) {
+  if (!concept) {
     return NextResponse.json({ ok: true, ...MOCK_VISUAL_CONCEPTS[platform] });
   }
+
+  // No image-generation API is configured for this deployment (Gemini's free
+  // tier used here doesn't include image generation) — the concept/prompt
+  // still gives the user everything needed to generate the image elsewhere.
+  return NextResponse.json({
+    ok: true,
+    imageUrl: null,
+    imagePrompt: concept.imagePrompt,
+    concept: concept.concept,
+    style: concept.style,
+    alternativeIdeas: concept.alternativeIdeas ?? [],
+    captionSuggestion: concept.captionSuggestion,
+  });
 }
