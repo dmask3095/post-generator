@@ -44,7 +44,7 @@ interface VisualConcept {
 }
 
 export default function DraftEditorPage() {
-  const { id } = useParams<{ id: string }>();
+  const { draftId: id } = useParams<{ draftId: string }>();
   const { user } = useAuth();
   const supabase = getSupabaseBrowserClient();
 
