@@ -1,5 +1,5 @@
 begin;
-select plan(9);
+select plan(12);
 
 select has_table('public', 'crossloop_prospects', 'prospects table exists');
 select has_column('public', 'crossloop_prospects', 'user_id', 'prospects are owned by a user');
@@ -9,13 +9,10 @@ select has_column('public', 'crossloop_prospects', 'outreach_message', 'personal
 select has_column('public', 'crossloop_prospects', 'affiliate_terms_verified', 'affiliate terms verification is stored');
 select ok((select relrowsecurity from pg_class where oid = 'public.crossloop_prospects'::regclass), 'row-level security is enabled');
 select ok((select count(*) = 4 from pg_policies where schemaname = 'public' and tablename = 'crossloop_prospects'), 'four owner-scoped policies exist');
-select ok(
-  (select count(*) = 4 from pg_policies
-   where schemaname = 'public' and tablename = 'crossloop_prospects'
-     and coalesce(qual, '') like '%auth.uid%'
-     and coalesce(with_check, '') like '%auth.uid%'),
-  'all policies scope access to the signed-in user'
-);
+select ok((select count(*) = 1 from pg_policies where schemaname = 'public' and tablename = 'crossloop_prospects' and cmd = 'SELECT' and qual like '%auth.uid%'), 'select policy scopes reads to the signed-in user');
+select ok((select count(*) = 1 from pg_policies where schemaname = 'public' and tablename = 'crossloop_prospects' and cmd = 'INSERT' and with_check like '%auth.uid%'), 'insert policy scopes writes to the signed-in user');
+select ok((select count(*) = 1 from pg_policies where schemaname = 'public' and tablename = 'crossloop_prospects' and cmd = 'UPDATE' and qual like '%auth.uid%' and with_check like '%auth.uid%'), 'update policy preserves owner scope');
+select ok((select count(*) = 1 from pg_policies where schemaname = 'public' and tablename = 'crossloop_prospects' and cmd = 'DELETE' and qual like '%auth.uid%'), 'delete policy scopes deletes to the signed-in user');
 
 select * from finish();
 rollback;

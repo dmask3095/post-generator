@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { getSupabaseBrowserClient } from '@/lib/supabase-browser';
-import { Search, Plus, ExternalLink, Copy, Check, Users, Send, Clock3, BadgeCheck, TrendingUp, X, Save, ChevronDown, CircleDollarSign, MessageSquareText } from 'lucide-react';
+import { Search, Plus, ExternalLink, Copy, Check, Users, Send, Clock3, BadgeCheck, TrendingUp, X, Save, CircleDollarSign, MessageSquareText } from 'lucide-react';
 
 const PLATFORMS = ['All platforms', 'Hacker News', 'Product Hunt', 'Reddit', 'Instagram', 'X', 'YouTube', 'LinkedIn', 'TikTok'] as const;
 type Platform = typeof PLATFORMS[number];
@@ -16,6 +16,20 @@ type Prospect = {
 };
 
 const discovery = [{
+  key: 'rohan-chaubey-ph',
+  platform: 'Product Hunt',
+  name: 'Rohan Chaubey',
+  role: 'Product Hunt top hunter, author, startup advisor',
+  profile_url: 'https://www.producthunt.com/@rohanrecommends',
+  source_url: 'https://www.producthunt.com/@rohanrecommends',
+  contact_method: 'Public email or Product Hunt profile',
+  contact_url: 'https://www.producthunt.com/@rohanrecommends',
+  fit_reason: 'His public Product Hunt profile identifies him as a top hunter and lists 22,495 followers and 659 hunted products. That makes him a plausible launch-channel partner; audience fit for CrossLoop still needs validation.',
+  audience_relevance: 'Product Hunt makers and launch followers; public profile listed 22,495 followers when reviewed.',
+  affiliate_candidate: true,
+  outreach_subject: 'A launch-film tool for your maker community',
+  outreach_message: 'Hi Rohan — I saw your Product Hunt profile and your work hunting products for the maker community. CrossLoop turns a public product URL into a narrated launch film in social-ready formats. Would you be open to trying it on a product page and telling me whether the output is worth sharing? I also saw CrossLoop’s affiliate page and can share the official details if the fit is interesting; I’m confirming the exact terms before promising anything. https://crossloop.ai',
+}, {
   key: 'onepin-soohyun-bae',
   platform: 'Product Hunt',
   name: 'Soohyun Bae',
