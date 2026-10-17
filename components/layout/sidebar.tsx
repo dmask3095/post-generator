@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/components/providers/auth-provider';
-import { Zap, LayoutDashboard, Radio, SquarePen as PenSquare, SquareCheck as CheckSquare, Calendar, ChartBar as BarChart3, Settings, Lightbulb, LogOut, ChevronRight } from 'lucide-react';
+import { Zap, LayoutDashboard, Radio, SquarePen as PenSquare, SquareCheck as CheckSquare, Calendar, ChartBar as BarChart3, Settings, Lightbulb, LogOut, ChevronRight, UsersRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const navItems = [
@@ -15,6 +15,7 @@ const navItems = [
   { href: '/calendar', label: 'Calendar', icon: Calendar },
   { href: '/ideas', label: 'Ideas', icon: Lightbulb },
   { href: '/analytics', label: 'Analytics', icon: BarChart3 },
+  { href: '/acquisition', label: 'Acquisition', icon: UsersRound },
 ];
 
 export function Sidebar() {
